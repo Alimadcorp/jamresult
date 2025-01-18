@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang=en>
+<head>
+<style>#ins,body{text-align:center;margin:0}a,h1,h2,h3,h4,h5,h6{color:transparent;transition:.3s ease-in-out}h4,h5,h6,p{margin-bottom:10px}#ins,.loading{width:100%;height:100%}body{font-family:Arial,sans-serif;background:#000;padding:0;overflow-x:hidden;justify-content:center;align-items:center;transition:background .5s}#ins{background:linear-gradient(135deg,#000012,#210000);padding:15px;max-width:100%;overflow:hidden;border-radius:10px}a,h1,h2,h3{background-clip:text}a,a:hover{color:#bb86fc}h1:hover,h2:hover,h3:hover{color:#fff;text-shadow:3px 4px 10px #09fa;cursor:pointer;filter:brightness(1.2)}h1,h2{background:linear-gradient(30deg,#f09,#90f);-webkit-background-clip:text}h3{background:linear-gradient(30deg,#09f,#0f9);-webkit-background-clip:text}h4,h5,h6{text-shadow:2px 2px 5px rgba(0,0,0,.3);animation:1s ease-out slideIn;background:linear-gradient(45deg,#6200ea,#bb86fc);-webkit-background-clip:text;background-clip:text}p{line-height:1.6;color:#ccc;animation:1s ease-out fadeInUp}table{width:97%;border-collapse:collapse;background:linear-gradient(135deg,#0a0f2d,#111733)}td,th{padding:10px;text-align:left;color:#eef;border:none}thead{background:linear-gradient(135deg,#a23566,#a23576)}tr.new-row{opacity:0;transition:opacity .5s,height .5s,width .5s}tr.new-row.visible{opacity:1}tr{transition:background-color .3s}tr:nth-child(2n){background-color:rgba(255,255,255,.05)}tr:hover{background-color:#446c99aa}a{text-decoration:none;transition:color .3s ease-in-out}a:hover{text-decoration:underline}ol,ul{margin:10px 0;padding-left:20px}li{margin-bottom:5px}.loading{position:fixed;top:0;left:0;background:rgba(0,0,0,.8);display:flex;justify-content:center;align-items:center;z-index:1000;animation:.5s ease-out fadeIn}.loading img{max-width:80%;height:auto;object-fit:contain;border-radius:10px}::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:rgba(255,255,255,.2)}::-webkit-scrollbar-thumb{background:#8888;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#5558}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}@keyframes slideIn{from{transform:translateX(-50px);opacity:0}to{transform:translateX(0);opacity:1}}.date_data{background:linear-gradient(30deg,#f09,#90f);-webkit-background-clip:text}
+  input[type="text"] {
+  width: 60%;
+  padding: 10px;
+  font-size: 16px;
+  border: 2px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+  background-color: #333;  /* Dark input background */
+  color: #e0e0e0;  /* Light input text */
+}
+
+button {
+  padding: 10px 15px;
+  font-size: 16px;
+  color: #fff;
+  background: #6200ea;  /* Dark purple background */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+button:hover {
+  background: #3700b3;  /* Darker purple on hover */
+}</style>
+<meta charset=utf-8>
+<title>Game Jam Result Getter by Alimad Co</title>
+</head>
+<body>
+<div class=loading id=load style=display:none>
+<img src=https://i.gifer.com/74H8.gif alt=Loading...>
+</div>
+  <div id=inputs>
+    <br><br><br>
+    <input type=text id=in>
+    <button onclick=loadCustom()>Load results</button>
+  </div>
+<div id=ins></div>
+<div id=error style=color:red;display:none></div>
+<script>
+  async function getHTML(url) {
+            try {
+                url = url.replace(/^https?:\/\//, "");
+                const res = await fetch("https://umgwtyorsn06yhno.vercel.app/html/" + url);
+                const data = await res.json();
+                return data.body;
+            } catch (error) {
+                displayError("Error fetching data from URL: " + error.message);
+                return null;
+            }
+        }
+   function parseHtml(htmlString, targetedTags, targetId = "", targetClass = "") {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, "text/html");
+            let elements;
+
+            if (targetId) {
+                const element = doc.getElementById(targetId);
+                elements = element ? [element] : [];
+            } else if (targetClass) {
+                elements = doc.getElementsByClassName(targetClass);
+            } else {
+                elements = doc.getElementsByTagName(targetedTags);
+            }
+
+            return Array.from(elements)
+                .filter(element => element.tagName.toLowerCase() === targetedTags.toLowerCase())
+                .map(element => element.innerHTML.trim())
+                .filter(innerHTML => innerHTML !== "");
+        }
+    function getProp(htmlString, targetTag, prop) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, "text/html");
+            const link = doc.querySelector(targetTag);
+            return link ? link.getAttribute(prop) : null;
+        }
+async function getItch(mainUrl) {
+    document.getElementById("error").style.display = "none";
+    if (!isValidReferrer(mainUrl)) {
+        displayError("Invalid referrer: The URL should be a subdomain of itch.io.");
+        return;
+    }
+
+    try {
+        let response = await getHTML(mainUrl);
+        if (!response) {
+            displayError("Failed to fetch");
+            return;
+        }
+
+        let sec = parseHtml(response, "li", "", "jam_entry");
+        if (sec.length === 0) {
+            displayError("This game is not submitted to any game jam");
+            return;
+        }
+
+        for (let i = 0; i < sec.length; i++) {
+            let jamURL = getProp(sec[i], "a", "href");
+            let results = await getHTML(jamURL);
+            let result = parseHtml(results, "section", "", "jam_game_results criteria_results");
+            let subTo = parseHtml(results, "h1", "", "jam_title_header");
+            let pjurl = getProp(subTo[0], "a", "href");
+
+            let insertion = document.createElement("div"); // Create a new div for each entry
+            let content = "";
+
+            if (result.length > 0) {
+                content += result[0];
+            } else {
+                let got = await getHTML("https://itch.io" + pjurl);
+                got = parseHtml(got, "div", "", "date_data");
+                const dateText = eth(got);
+                content += `<h3>${dateText}</h3>`;
+
+                if (dateText.includes("to")) {
+                    const [startDate, endDate] = dateText.split(" to ");
+                    const today = new Date();
+                    const end = new Date(endDate);
+                    const timeDiff = end - today;
+                    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                    content += `<h3>Ratings will be available in ${daysLeft} days</h3>`;
+                } else {
+                    content += "<h3>Ratings are not in yet</h3>";
+                }
+            }
+
+            content += `<a href="${jamURL}">${jamURL}</a>`;
+            content = `<h2>Submission to ${subTo[0]}</h2>` + content;
+
+            if (i === sec.length - 1) {
+                content = `<h1>${parseHtml(response, "title", "", "")[0]}</h1>` + content;
+            }
+
+            content += `<br><h3 id="lol">______________________________________________</h3><br>`;
+            insertion.innerHTML = content;
+
+            // **Prepend instead of replacing**
+            let parentDiv = document.getElementById("ins");
+            parentDiv.prepend(insertion); // Adds the new content at the top
+        }
+
+        document.getElementById("load").style.display = "none";
+    } catch (error) {
+        displayError("An error occurred while processing the data: " + error.message);
+    }
+}
+
+function isValidReferrer(ref) {
+  ref = ref.replace(/^https?:\/\//, "");
+            const regex = /^[a-z0-9-]+\.itch\.io\/[a-z0-9-]+$/;
+            return regex.test(ref);
+        }
+  function displayError(message) {
+            document.getElementById("error").style.display = "block";
+            document.getElementById("error").innerHTML = "<h3>" + message + "</h3>";
+            document.getElementById("load").style.display = "none";
+        }
+function eth(htmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    const spans = doc.querySelectorAll('.date_format');
+    const textArray = Array.from(spans).map(span => span.textContent.trim());
+    return textArray.join(' to ');
+}
+  function loadCustom(){
+    document.getElementById("load").style.display = "flex";
+    getItch(document.getElementById("in").value);
+  }
+</script>
+</body>
+</html>
