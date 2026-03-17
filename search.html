@@ -45,7 +45,7 @@ button:hover {
   async function getHTML(url) {
             try {
                 const res = await fetch("https://proxy.alimad.co/api/proxy?url=" + url);
-                const data = await res.json();
+                const data = await res.text();
                 return data;
             } catch (error) {
                 displayError("Error fetching data from URL: " + error.message);
