@@ -45,9 +45,9 @@ button:hover {
   async function getHTML(url) {
             try {
                 url = url.replace(/^https?:\/\//, "");
-                const res = await fetch("https://umgwtyorsn06yhno.vercel.app/html/" + url);
+                const res = await fetch("https://proxy.alimad.co/api/proxy?url=" + url);
                 const data = await res.json();
-                return data.body;
+                return data;
             } catch (error) {
                 displayError("Error fetching data from URL: " + error.message);
                 return null;
