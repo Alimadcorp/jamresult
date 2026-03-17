@@ -44,7 +44,6 @@ button:hover {
 <script>
   async function getHTML(url) {
             try {
-                url = url.replace(/^https?:\/\//, "");
                 const res = await fetch("https://proxy.alimad.co/api/proxy?url=" + url);
                 const data = await res.json();
                 return data;
